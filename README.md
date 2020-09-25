@@ -35,6 +35,7 @@ Setup target (device) configuration file:
   auth_token                = bhVahL1Il1shie2aj2poojeChee6ahShu
   #gateway_token            = bhVahL1Il1shie2aj2poojeChee6ahShu
   bundle_download_location  = /tmp/bundle.raucb
+  ca_info                   =
   retry_wait                = 60
   connect_timeout           = 20
   timeout                   = 60

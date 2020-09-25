@@ -39,6 +39,7 @@ struct config {
         gchar* tenant_id;                 /**< hawkBit tenant id */
         gchar* controller_id;             /**< hawkBit controller id*/
         gchar* bundle_download_location;  /**< file to download rauc bundle to */
+        gchar *ca_info;                   /**< ca info use for ssl certificat */
         gchar* polling_trigger_file;      /**< file to trigger polling */
         long connect_timeout;             /**< connection timeout */
         long timeout;                     /**< reply timeout */

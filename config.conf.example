@@ -8,6 +8,9 @@ ssl                       = true
 # validate ssl certificate (only use if ssl is true)
 ssl_verify                = true
 
+# Certificate Authority (CA) bundle (optionnal)
+ca_info = /etc/certs/cabundle.pem
+
 # Tenant id
 tenant_id                 = DEFAULT
 
@@ -20,7 +23,7 @@ auth_token                = <device-id>
 # Or gateway_token can be used instead of auth_token
 #gateway_token             = cb115a721af28f781b493fa467819ef5
 
-# Temporay file RAUC bundle should be downloaded to
+# Temporary file RAUC bundle should be downloaded to
 bundle_download_location  = /tmp/bundle.raucb
 
 # Polling file to trigger a poll

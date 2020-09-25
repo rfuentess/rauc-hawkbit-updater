@@ -158,6 +158,9 @@ static gboolean get_binary(const gchar* download_url, const gchar* file, gint64 
         curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 8L);
         curl_easy_setopt(curl, CURLOPT_USERAGENT, HAWKBIT_USERAGENT);
+        if (hawkbit_config->ca_info) {
+                curl_easy_setopt(curl, CURLOPT_CAINFO, hawkbit_config->ca_info);
+        }
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, hawkbit_config->connect_timeout);
         curl_easy_setopt(curl, CURLOPT_BUFFERSIZE, DEFAULT_CURL_DOWNLOAD_BUFFER_SIZE);
         curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_to_file_cb);
@@ -269,6 +272,9 @@ static gint rest_request(enum HTTPMethod method, const gchar* url, JsonBuilder* 
         curl_easy_setopt(curl_request, CURLOPT_URL, url);
         curl_easy_setopt(curl_request, CURLOPT_FOLLOWLOCATION, 1L);
         curl_easy_setopt(curl_request, CURLOPT_USERAGENT, HAWKBIT_USERAGENT);
+        if (hawkbit_config->ca_info) {
+                curl_easy_setopt(curl_request, CURLOPT_CAINFO, hawkbit_config->ca_info);
+        }
         curl_easy_setopt(curl_request, CURLOPT_CUSTOMREQUEST, HTTPMethod_STRING[method]);
         curl_easy_setopt(curl_request, CURLOPT_CONNECTTIMEOUT, hawkbit_config->connect_timeout);
         curl_easy_setopt(curl_request, CURLOPT_TIMEOUT, hawkbit_config->timeout);

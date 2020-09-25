@@ -46,6 +46,7 @@ void config_file_free(struct config *config)
         g_free(config->auth_token);
         g_free(config->gateway_token);
         g_free(config->bundle_download_location);
+        g_free(config->ca_info);
         g_free(config->polling_trigger_file);
         g_hash_table_destroy(config->device);
 }
@@ -54,7 +55,7 @@ static gboolean get_key_string(GKeyFile *key_file, const gchar* group, const gch
 {
         gchar *val = NULL;
         val = g_key_file_get_string(key_file, group, key, NULL);
-        if (val == NULL) {
+        if (val == NULL || !g_strcmp0(val, "")) {
                 if (default_value != NULL) {
                         *value = g_strdup(default_value);
                         return TRUE;
@@ -257,6 +258,11 @@ struct config* load_config_file(const gchar* config_file, GError** error)
                 return NULL;
         if (!get_key_bool(ini_file, "client", "ssl_verify", &config->ssl_verify, DEFAULT_SSL_VERIFY, error))
                 return NULL;
+        if (!get_key_string(ini_file, "client", "ca_info", &config->ca_info, NULL, NULL)) {
+                /* This field is optionnal */
+                config->ca_info = NULL;
+        }
+
         if (!get_group(ini_file, "device", &config->device, error))
                 return NULL;
 
