@@ -564,6 +564,9 @@ static void process_deployment_cleanup(gboolean install_success)
                                 g_debug("Failed to delete file: %s", FILE_DO_REBOOT);
                         }
                 }
+        } else {
+                /* force to quit to avoid memory leak */
+                exit(-1);
         }
 }
 
