@@ -489,7 +489,7 @@ gboolean hawkbit_progress(const gchar *msg)
         return G_SOURCE_REMOVE;
 }
 
-static gboolean identify(GError **error)
+gboolean identify(GError **error)
 {
         g_debug("Identifying ourself to hawkbit server");
         g_autofree gchar *put_config_data_url = build_api_url(

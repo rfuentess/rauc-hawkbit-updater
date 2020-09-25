@@ -106,5 +106,6 @@ void hawkbit_init(struct config *config, GSourceFunc on_install_ready);
 int hawkbit_start_service_sync();
 gboolean hawkbit_progress(const gchar *msg);
 gboolean install_complete_cb(gpointer ptr);
+gboolean identify(GError **error);
 
 #endif // __HAWKBIT_CLIENT_H__

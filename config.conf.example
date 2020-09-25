@@ -1,21 +1,21 @@
 [client]
 # host or IP and optional port
-hawkbit_server            = 10.10.0.254:8080
+hawkbit_server            = eagle.wattsense.com
 
 # true = HTTPS, false = HTTP
-ssl                       = false
+ssl                       = true
 
 # validate ssl certificate (only use if ssl is true)
-ssl_verify                = false
+ssl_verify                = true
 
 # Tenant id
 tenant_id                 = DEFAULT
 
 # Target name (controller id)
-target_name               = test-target
+target_name               = <device-id>
 
 # Security token
-auth_token                = cb115a721af28f781b493fa467819ef5
+auth_token                = <device-id>
 
 # Or gateway_token can be used instead of auth_token
 #gateway_token             = cb115a721af28f781b493fa467819ef5
@@ -33,7 +33,7 @@ connect_timeout           = 20
 timeout                   = 60
 
 # debug, info, message, critical, error, fatal
-log_level                 = message
+log_level                 = error
 
 # Every key / value under [device] is sent to HawkBit (target attributes),
 # and can be used in target filter.

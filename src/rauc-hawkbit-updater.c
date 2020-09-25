@@ -31,6 +31,7 @@
 #include "rauc-installer.h"
 #include "hawkbit-client.h"
 #include "config-file.h"
+#include "device_id.h"
 #include "log.h"
 
 #define PROGRAM "rauc-hawkbit-updater"
@@ -153,6 +154,8 @@ int main(int argc, char **argv)
                 force_check_run = TRUE;
         }
 
+        device_id_init();
+
         struct config *config = load_config_file(config_file, &error);
         if (config == NULL) {
                 g_printerr("Loading config file failed: %s\n", error->message);
@@ -169,6 +172,7 @@ int main(int argc, char **argv)
 
         setup_logging(PROGRAM, log_level, opt_output_systemd);
         hawkbit_init(config, on_new_software_ready_cb);
+        identify(&error); /* Identify ourselves to push new attributes */
         exit_code = hawkbit_start_service_sync();
 
         config_file_free(config);

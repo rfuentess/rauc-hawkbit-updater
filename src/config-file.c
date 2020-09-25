@@ -27,7 +27,7 @@
 #include "config-file.h"
 #include <glib/gtypes.h>
 #include <stdlib.h>
-
+#include "device_id.h"
 
 static const gint DEFAULT_CONNECTTIMEOUT  = 20;     // 20 sec.
 static const gint DEFAULT_TIMEOUT         = 60;     // 1 min.
@@ -186,6 +186,11 @@ struct config* load_config_file(const gchar* config_file, GError** error)
                 return NULL;
 
         key_auth_token_exists = get_key_string(ini_file, "client", "auth_token", &config->auth_token, NULL, NULL);
+        if (g_strcmp0(config->auth_token,"<device-id>") ==0 ) {
+                g_free(config->auth_token);
+                config->auth_token = g_strdup(device_id_get());
+        }
+
         key_gateway_token_exists = get_key_string(ini_file, "client", "gateway_token", &config->gateway_token, NULL, NULL);
         if (!key_auth_token_exists && !key_gateway_token_exists) {
                 g_set_error(error, 1, 4, "Neither auth_token nor gateway_token is set in the config.");
@@ -196,6 +201,11 @@ struct config* load_config_file(const gchar* config_file, GError** error)
 
         if (!get_key_string(ini_file, "client", "target_name", &config->controller_id, NULL, error))
                 return NULL;
+        if (g_strcmp0(config->controller_id,"<device-id>") ==0 ) {
+                g_free(config->controller_id);
+                config->controller_id = g_strdup(device_id_get());
+        }
+
         if (!get_key_string(ini_file, "client", "tenant_id", &config->tenant_id, "DEFAULT", error))
                 return NULL;
         if (!get_key_string(ini_file, "client", "bundle_download_location", &config->bundle_download_location, NULL, error))

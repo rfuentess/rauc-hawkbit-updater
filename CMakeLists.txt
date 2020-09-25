@@ -62,6 +62,7 @@ set(RAUC_HAWKBIT_SRCS
   src/rauc-hawkbit-updater.c
   src/rauc-installer.c
   src/config-file.c
+  src/device_id.c
   src/hawkbit-client.c
   src/json-helper.c
   src/log.c
