@@ -37,6 +37,7 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <sys/reboot.h>
 #include <sys/statvfs.h>
 #include <curl/curl.h>
@@ -553,6 +554,10 @@ static void process_deployment_cleanup(gboolean install_success)
         action_id = NULL;
         g_free(ptr);
 
+        /* unlock deploy lock file */
+        lockf(fd_lock,  F_ULOCK, 0);
+        close(fd_lock);
+
         if (g_file_test(hawkbit_config->bundle_download_location, G_FILE_TEST_EXISTS)) {
                 if (g_remove(hawkbit_config->bundle_download_location) != 0) {
                         g_debug("Failed to delete file: %s", hawkbit_config->bundle_download_location);
@@ -665,6 +670,21 @@ static gboolean process_deployment(JsonNode *req_root, GError **error)
 
         if (action_id) {
                 g_warning("Deployment is already in progress...");
+                return FALSE;
+        }
+
+        /* check also if another process is already deploying ... */
+        fd_lock = open(HAWKBIT_DEPLOY_LOCK,O_CREAT | O_RDWR, 0600);
+        if (fd_lock  > 0 ) {
+                int rc;
+                rc = lockf(fd_lock,  F_TLOCK, 0);
+                if (rc < 0) {
+                        g_warning("Deployment is already in progress by another process ...");
+                        return FALSE;
+                }
+        }
+        else {
+                g_warning("Deployment trouble failed to open (%s)",HAWKBIT_DEPLOY_LOCK);
                 return FALSE;
         }
 
