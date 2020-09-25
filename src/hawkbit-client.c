@@ -37,6 +37,7 @@
 #include <string.h>
 #include <time.h>
 #include <errno.h>
+#include <sys/reboot.h>
 #include <sys/statvfs.h>
 #include <curl/curl.h>
 #include <glib.h>
@@ -517,7 +518,9 @@ static void process_artifact_cleanup(struct artifact *artifact)
         g_free(artifact);
 }
 
-static void process_deployment_cleanup()
+#define FILE_DO_REBOOT "/tmp/.do_reboot"
+
+static void process_deployment_cleanup(gboolean install_success)
 {
         //g_clear_pointer(action_id, g_free);
         gpointer ptr = action_id;
@@ -527,6 +530,18 @@ static void process_deployment_cleanup()
         if (g_file_test(hawkbit_config->bundle_download_location, G_FILE_TEST_EXISTS)) {
                 if (g_remove(hawkbit_config->bundle_download_location) != 0) {
                         g_debug("Failed to delete file: %s", hawkbit_config->bundle_download_location);
+                }
+        }
+
+        if (access(FILE_DO_REBOOT, F_OK) != -1) {
+                if (install_success) {
+                        sync();
+                        reboot(RB_AUTOBOOT);
+                } else {
+                        /* in case of install failure then remove file to force reboot*/
+                        if (unlink(FILE_DO_REBOOT) != 0) {
+                                g_debug("Failed to delete file: %s", FILE_DO_REBOOT);
+                        }
                 }
         }
 }
@@ -546,7 +561,7 @@ gboolean install_complete_cb(gpointer ptr)
                         feedback(feedback_url, action_id, "Failed to install software bundle.", "failure", "closed", NULL);
                 }
 
-                process_deployment_cleanup();
+                process_deployment_cleanup(result->install_success);
         }
         return G_SOURCE_REMOVE;
 }
@@ -609,7 +624,7 @@ static gpointer download_thread(gpointer data)
 down_error:
         g_free(checksum.checksum_result);
         process_artifact_cleanup(artifact);
-        process_deployment_cleanup();
+        process_deployment_cleanup(FALSE);
         return NULL;
 }
 
@@ -728,7 +743,7 @@ proc_error:
         g_object_unref(json_response_parser);
         // Lets cleanup processing deployment failed
         process_artifact_cleanup(artifact);
-        process_deployment_cleanup();
+        process_deployment_cleanup(FALSE);
         return FALSE;
 }
 
