@@ -28,6 +28,7 @@
 #include <glib/gtypes.h>
 #include <stdlib.h>
 #include "device_id.h"
+#include "ws-version.h"
 
 static const gint DEFAULT_CONNECTTIMEOUT  = 20;     // 20 sec.
 static const gint DEFAULT_TIMEOUT         = 60;     // 1 min.
@@ -137,8 +138,23 @@ static gboolean get_group(GKeyFile *key_file, const gchar *group, GHashTable **h
                 if (value == NULL)
                         return FALSE;
 
+                if (g_strcmp0(value,"<hw-name>") == 0) {
+                        g_free(value);
+                        value = hw_name_get();
+                }
+
+                if (g_strcmp0(value,"<rootfs-vers>") == 0) {
+                        g_free(value);
+                        value = rootfs_version_get();
+                }
+
+                if (g_strcmp0(value,"<app-vers>") == 0) {
+                        g_free(value);
+                        value = app_version_get();
+                }
+
                 g_hash_table_insert(*hash, keys[key], value);
-                //g_debug("\t\tkey %u/%lu: \t%s => %s\n", key, num_keys - 1, keys[key], value);
+                g_debug("\t\tkey %u/%lu: \t%s => %s\n", key, num_keys - 1, keys[key], value);
         }
 
         return TRUE;

@@ -66,6 +66,7 @@ set(RAUC_HAWKBIT_SRCS
   src/hawkbit-client.c
   src/json-helper.c
   src/log.c
+  src/ws-version.c
 )
 
 # if systemd append sd-helper

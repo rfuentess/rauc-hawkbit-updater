@@ -38,6 +38,6 @@ log_level                 = error
 # Every key / value under [device] is sent to HawkBit (target attributes),
 # and can be used in target filter.
 [device]
-mac_address               = ff:ff:ff:ff:ff:ff
-hw_revision               = 2
-model                     = T1
+HW_NAME                   = <hw-name>
+ROOTFS_VERS               = <rootfs-vers>
+APP_VERS                  = <app-vers>
