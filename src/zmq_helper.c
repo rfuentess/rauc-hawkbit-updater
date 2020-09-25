@@ -59,6 +59,7 @@ ret_t zmq_pub_create_and_bind(zmq_desc_t* publisher, unsigned short publisher_po
                 if (zmq_bind((*publisher)->connection, connection_str) != 0) {
                         g_critical("zmq_bind failed");
                         (void)zmq_pub_sub_destroy(*publisher);
+                        *publisher = NULL;
                         ret = ret_failure;
                 }
         }

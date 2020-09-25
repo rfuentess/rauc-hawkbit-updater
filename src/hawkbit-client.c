@@ -854,7 +854,7 @@ static gboolean hawkbit_pull_cb(gpointer user_data)
         g_message("Checking for new software...");
         int status = rest_request(GET, get_tasks_url, NULL, &json_response_parser, &error);
         if (status == 200) {
-                if (hawkbit_config->hub) {
+                if (hawkbit_config->hub && hawkbit_config->heartbeat_publisher !=NULL) {
                         /* publish heartbeat to SSDP service */
                         if (zmq_send(hawkbit_config->heartbeat_publisher->connection, HEARTBEAT_STR, strlen(HEARTBEAT_STR), 0) == -1) {
                                 g_critical("failed to publish ZMQ Heartbeat message");
