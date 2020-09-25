@@ -48,6 +48,7 @@
 #include <libgen.h>
 #include <bits/types/struct_tm.h>
 #include <gio/gio.h>
+#include <zmq.h>
 
 #include "config-file.h"
 #include "json-helper.h"
@@ -58,6 +59,7 @@
 #include "hawkbit-client.h"
 
 #define LOOP_PERIOD_MS 1000
+#define HEARTBEAT_STR "heartbeat"
 #define HAWKBIT_DEPLOY_LOCK "/var/lock/hawkbit_deploy.lock"
 int fd_lock;
 
@@ -823,7 +825,11 @@ static gboolean hawkbit_pull_cb(gpointer user_data)
                         g_unlink(hawkbit_config->polling_trigger_file);
                         g_message("Force polling requested");
                 } else {
-                        if (last_run_sec < sleep_time)
+                        if (hawkbit_config->hub) {
+                                if (last_run_sec < 2)
+                                        return G_SOURCE_CONTINUE;
+                        }
+                        else if (last_run_sec < sleep_time)
                                 return G_SOURCE_CONTINUE;
                 }
         }
@@ -842,6 +848,12 @@ static gboolean hawkbit_pull_cb(gpointer user_data)
         g_message("Checking for new software...");
         int status = rest_request(GET, get_tasks_url, NULL, &json_response_parser, &error);
         if (status == 200) {
+                if (hawkbit_config->hub) {
+                        /* publish heartbeat to SSDP service */
+                        if (zmq_send(hawkbit_config->heartbeat_publisher->connection, HEARTBEAT_STR, strlen(HEARTBEAT_STR), 0) == -1) {
+                                g_critical("failed to publish ZMQ Heartbeat message");
+                        }
+                }
                 if (json_response_parser) {
                         // json_root is owned by the JsonParser and should never be modified or freed.
                         JsonNode *json_root = json_parser_get_root(json_response_parser);

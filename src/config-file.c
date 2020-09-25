@@ -28,6 +28,7 @@
 #include <glib/gtypes.h>
 #include <stdlib.h>
 #include "device_id.h"
+#include "desktop_zmq.h"
 #include "ws-version.h"
 
 static const gint DEFAULT_CONNECTTIMEOUT  = 20;     // 20 sec.
@@ -201,6 +202,29 @@ struct config* load_config_file(const gchar* config_file, GError** error)
 
         if (!get_key_string(ini_file, "client", "hawkbit_server", &config->hawkbit_server, NULL, error))
                 return NULL;
+
+        config->hub = FALSE;
+        if (g_strcmp0(config->hawkbit_server,"<server-desktop>") == 0) {
+                gchar* host_tmp = NULL;
+                gint64 port_tmp;
+
+                /* Get http server from SSDP service */
+                if (get_desktop_server(&host_tmp,&port_tmp) < 0 ) {
+                        /* Trouble to get HTTP server
+                         * quit, it will restart again
+                         */
+                        g_set_error(error, 1,4,"Failed to get http server from SSDP");
+                        return NULL;
+                }
+
+                g_free(config->hawkbit_server);
+                config->hawkbit_server = g_strdup_printf("%s:%"G_GINT64_FORMAT, host_tmp, port_tmp);
+
+                config->hub = TRUE;
+                desktop_zmq_destroy(); /* ?? */
+                if (host_tmp != NULL)
+                        free(host_tmp);
+        }
 
         key_auth_token_exists = get_key_string(ini_file, "client", "auth_token", &config->auth_token, NULL, NULL);
         if (g_strcmp0(config->auth_token,"<device-id>") ==0 ) {

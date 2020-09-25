@@ -62,10 +62,12 @@ set(RAUC_HAWKBIT_SRCS
   src/rauc-hawkbit-updater.c
   src/rauc-installer.c
   src/config-file.c
+  src/desktop_zmq.c
   src/device_id.c
   src/hawkbit-client.c
   src/json-helper.c
   src/log.c
+  src/zmq_helper.c
   src/ws-version.c
 )
 
@@ -106,7 +108,7 @@ if (QA_BUILD)
 endif (QA_BUILD)
 
 target_link_libraries( rauc-hawkbit-updater LINK_PUBLIC ${GIO_LIBRARIES}
-                       ${JSONGLIB_LIBRARIES} ${CURL_LIBRARIES} ${SYSTEMD_LIBRARIES})
+                       ${JSONGLIB_LIBRARIES} ${CURL_LIBRARIES} ${SYSTEMD_LIBRARIES} ${ZEROMQ_LIBRARIES})
 install (TARGETS rauc-hawkbit-updater DESTINATION /usr/bin/)
 
 if (WITH_SYSTEMD)

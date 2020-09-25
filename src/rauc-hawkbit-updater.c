@@ -36,6 +36,7 @@
 
 #define PROGRAM "rauc-hawkbit-updater"
 #define VERSION 0.1
+#define ZMQ_HEARTBEAT_PORT 3001
 
 // program arguments
 static gchar *config_file          = NULL;
@@ -171,9 +172,18 @@ int main(int argc, char **argv)
         }
 
         setup_logging(PROGRAM, log_level, opt_output_systemd);
+
+        if (config->hub) {
+                zmq_pub_create_and_bind(&config->heartbeat_publisher,ZMQ_HEARTBEAT_PORT);
+        }
+
         hawkbit_init(config, on_new_software_ready_cb);
         identify(&error); /* Identify ourselves to push new attributes */
         exit_code = hawkbit_start_service_sync();
+
+        if (config->hub) {
+                zmq_pub_sub_destroy(config->heartbeat_publisher);
+        }
 
         config_file_free(config);
 out:

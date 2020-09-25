@@ -23,12 +23,15 @@
 #define __CONFIG_FILE_H__
 
 #include <glib.h>
+#include <zmq_helper.h>
 
 /**
  * @brief struct that contains the Rauc HawkBit configuration.
  */
 struct config {
         gchar* hawkbit_server;            /**< hawkBit host or IP and port */
+        gboolean hub;                     /**< allow to determine if in HUB mode */
+        zmq_desc_t heartbeat_publisher;   /**< ZeroMQ heartbeat publisher */
         gboolean ssl;                     /**< use https or http */
         gboolean ssl_verify;              /**< verify https certificate */
         gchar* auth_token;                /**< hawkBit target security token */
