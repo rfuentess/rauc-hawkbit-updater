@@ -23,6 +23,9 @@ auth_token                = <device-id>
 # Temporay file RAUC bundle should be downloaded to
 bundle_download_location  = /tmp/bundle.raucb
 
+# Polling file to trigger a poll
+polling_trigger_file  = /tmp/hawkbit_poll
+
 # time in seconds to wait before retrying
 retry_wait                = 60
 

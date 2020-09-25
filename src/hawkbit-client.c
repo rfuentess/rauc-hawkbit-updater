@@ -56,6 +56,10 @@
 
 #include "hawkbit-client.h"
 
+#define LOOP_PERIOD_MS 1000
+#define HAWKBIT_DEPLOY_LOCK "/var/lock/hawkbit_deploy.lock"
+int fd_lock;
+
 gboolean volatile force_check_run = FALSE;
 gboolean run_once = FALSE;
 static GMutex curl_mutex;
@@ -73,6 +77,7 @@ static gchar * volatile action_id = NULL;
 static long hawkbit_interval_check_sec = DEFAULT_SLEEP_TIME_SEC;
 static long sleep_time = 20;
 static long last_run_sec = 0;
+static long first_run_sec = 0;
 
 /**
  * @brief Get available free space
@@ -788,8 +793,21 @@ static gboolean hawkbit_pull_cb(gpointer user_data)
 {
         ClientData *data = user_data;
 
-        if (!force_check_run && ++last_run_sec < sleep_time)
-                return G_SOURCE_CONTINUE;
+        if (!force_check_run) {
+                /* hawkbit_pull_cb is called every LOOP PERIOD */
+                last_run_sec += LOOP_PERIOD_MS/1000;
+                first_run_sec += LOOP_PERIOD_MS/1000;
+
+                /* Test if polling is required immediately */
+                if (g_file_test(hawkbit_config->polling_trigger_file, G_FILE_TEST_EXISTS)) {
+                        g_unlink(hawkbit_config->polling_trigger_file);
+                        g_message("Force polling requested");
+                } else {
+                        if (last_run_sec < sleep_time)
+                                return G_SOURCE_CONTINUE;
+                }
+        }
+
 
         force_check_run = FALSE;
         last_run_sec = 0;
@@ -871,7 +889,7 @@ int hawkbit_start_service_sync()
         ctx = g_main_context_new();
         cdata.loop = g_main_loop_new(ctx, FALSE);
 
-        timeout_source = g_timeout_source_new(1000);   // pull every second
+        timeout_source = g_timeout_source_new(LOOP_PERIOD_MS);   // pull every second
         g_source_set_name(timeout_source, "Add timeout");
         g_source_set_callback(timeout_source, (GSourceFunc) hawkbit_pull_cb, &cdata, NULL);
         g_source_attach(timeout_source, ctx);

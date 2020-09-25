@@ -45,6 +45,7 @@ void config_file_free(struct config *config)
         g_free(config->auth_token);
         g_free(config->gateway_token);
         g_free(config->bundle_download_location);
+        g_free(config->polling_trigger_file);
         g_hash_table_destroy(config->device);
 }
 
@@ -225,6 +226,8 @@ struct config* load_config_file(const gchar* config_file, GError** error)
         if (!get_key_string(ini_file, "client", "tenant_id", &config->tenant_id, "DEFAULT", error))
                 return NULL;
         if (!get_key_string(ini_file, "client", "bundle_download_location", &config->bundle_download_location, NULL, error))
+                return NULL;
+        if (!get_key_string(ini_file, "client", "polling_trigger_file", &config->polling_trigger_file, NULL, error))
                 return NULL;
         if (!get_key_bool(ini_file, "client", "ssl", &config->ssl, DEFAULT_SSL, error))
                 return NULL;
