@@ -4,8 +4,6 @@ After=network.target
 After=rauc.service
 
 [Service]
-User=rauc-hawkbit
-Group=rauc-hawkbit
 ExecStart=/usr/bin/rauc-hawkbit-updater -s -c /etc/rauc-hawkbit-updater/config.conf
 TimeoutSec=60s
 WatchdogSec=5m
