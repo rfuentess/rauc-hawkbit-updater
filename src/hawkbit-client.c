@@ -58,6 +58,7 @@
 
 gboolean volatile force_check_run = FALSE;
 gboolean run_once = FALSE;
+static GMutex curl_mutex;
 
 /**
  * @brief String representation of HTTP methods.
@@ -230,31 +231,43 @@ static size_t curl_write_cb(void *content, size_t size, size_t nmemb, void *data
  */
 static gint rest_request(enum HTTPMethod method, const gchar* url, JsonBuilder* jsonRequestBody, JsonParser** jsonResponseParser, GError** error)
 {
+        gboolean request_error = FALSE;
         gchar *postdata = NULL;
         struct rest_payload fetch_buffer;
 
-        CURL *curl = curl_easy_init();
-        if (!curl) return -1;
+        static CURL* curl_request = NULL;
+
+        g_mutex_lock(&curl_mutex);
+
+        if (curl_request == NULL)
+                curl_request = curl_easy_init();
+
+        if (!curl_request) {
+                g_mutex_lock(&curl_mutex);
+                return -1;
+        }
 
         // init response buffer
         fetch_buffer.payload = g_malloc0(DEFAULT_CURL_REQUEST_BUFFER_SIZE);
         if (fetch_buffer.payload == NULL) {
                 g_debug("Failed to expand buffer");
-                curl_easy_cleanup(curl);
+                curl_easy_cleanup(curl_request);
+                g_mutex_lock(&curl_mutex);
                 return -1;
         }
         fetch_buffer.size = 0;
 
         // setup CURL options
-        curl_easy_setopt(curl, CURLOPT_URL, url);
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, HAWKBIT_USERAGENT);
-        curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, HTTPMethod_STRING[method]);
-        curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, hawkbit_config->connect_timeout);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, hawkbit_config->timeout);
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, curl_write_cb);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*) &fetch_buffer);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, hawkbit_config->ssl_verify ? 1L : 0L);
-        curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, hawkbit_config->ssl_verify ? 1L : 0L);
+        curl_easy_setopt(curl_request, CURLOPT_URL, url);
+        curl_easy_setopt(curl_request, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl_request, CURLOPT_USERAGENT, HAWKBIT_USERAGENT);
+        curl_easy_setopt(curl_request, CURLOPT_CUSTOMREQUEST, HTTPMethod_STRING[method]);
+        curl_easy_setopt(curl_request, CURLOPT_CONNECTTIMEOUT, hawkbit_config->connect_timeout);
+        curl_easy_setopt(curl_request, CURLOPT_TIMEOUT, hawkbit_config->timeout);
+        curl_easy_setopt(curl_request, CURLOPT_WRITEFUNCTION, curl_write_cb);
+        curl_easy_setopt(curl_request, CURLOPT_WRITEDATA, (void*) &fetch_buffer);
+        curl_easy_setopt(curl_request, CURLOPT_SSL_VERIFYPEER, hawkbit_config->ssl_verify ? 1L : 0L);
+        curl_easy_setopt(curl_request, CURLOPT_SSL_VERIFYHOST, hawkbit_config->ssl_verify ? 1L : 0L);
 
         if (jsonRequestBody) {
                 // Convert request into a string
@@ -263,7 +276,7 @@ static gint rest_request(enum HTTPMethod method, const gchar* url, JsonBuilder* 
                 gsize length;
                 postdata = json_generator_to_data(generator, &length);
                 g_object_unref(generator);
-                curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postdata);
+                curl_easy_setopt(curl_request, CURLOPT_POSTFIELDS, postdata);
                 g_debug("Request body: %s\n", postdata);
         }
 
@@ -280,12 +293,12 @@ static gint rest_request(enum HTTPMethod method, const gchar* url, JsonBuilder* 
         if (jsonRequestBody) {
                 headers = curl_slist_append(headers, "Content-Type: application/json;charset=UTF-8");
         }
-        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_easy_setopt(curl_request, CURLOPT_HTTPHEADER, headers);
 
         // perform request
-        CURLcode res = curl_easy_perform(curl);
+        CURLcode res = curl_easy_perform(curl_request);
         glong http_code = 0;
-        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+        curl_easy_getinfo(curl_request, CURLINFO_RESPONSE_CODE, &http_code);
         if (res == CURLE_OK && http_code == 200) {
                 if (jsonResponseParser && fetch_buffer.size > 0) {
                         JsonParser *parser = json_parser_new_immutable();
@@ -298,6 +311,7 @@ static gint rest_request(enum HTTPMethod method, const gchar* url, JsonBuilder* 
                 }
         } else if (res == CURLE_OPERATION_TIMEDOUT) {
                 // libcurl was able to complete a TCP connection to the origin server, but did not receive a timely HTTP response.
+                request_error = TRUE;
                 http_code = 524;
                 g_set_error(error,
                             1,                    // error domain
@@ -305,6 +319,7 @@ static gint rest_request(enum HTTPMethod method, const gchar* url, JsonBuilder* 
                             "HTTP request timed out: %s",
                             curl_easy_strerror(res));
         } else {
+                request_error = TRUE;
                 g_set_error(error,
                             1,                    // error domain
                             http_code,
@@ -316,8 +331,14 @@ static gint rest_request(enum HTTPMethod method, const gchar* url, JsonBuilder* 
 
         g_free(fetch_buffer.payload);
         g_free(postdata);
-        curl_easy_cleanup(curl);
         curl_slist_free_all(headers);
+        if (request_error) {
+                curl_easy_cleanup(curl_request);
+                curl_request = NULL;
+        }
+
+        g_mutex_unlock(&curl_mutex);
+
         return http_code;
 }
 
